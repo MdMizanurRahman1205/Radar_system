@@ -1,0 +1,57 @@
+import processing.serial.*;
+
+Serial myPort;       
+String data = "";
+float angle, distance;
+
+void setup() {
+  size(800, 400); // Half height for 180° view
+  myPort = new Serial(this, "COM5", 9600); // Change COM port to your Arduino's
+  myPort.bufferUntil('\n');
+}
+
+void draw() {
+  background(0);
+  translate(width/2, height); // Bottom center for half radar
+  stroke(0, 255, 0);
+  noFill();
+  
+  // Draw radar arcs (100 cm each ring)
+  for (int r = 50; r <= 400; r += 50) {
+    arc(0, 0, r*2, r*2, PI, TWO_PI);
+  }
+  
+  // Draw sweep line
+  float sweepX = cos(radians(angle)) * 400;
+  float sweepY = -sin(radians(angle)) * 400;
+  stroke(0, 255, 0);
+  line(0, 0, sweepX, sweepY);
+  
+  // Draw detected object with distance label
+  if (distance > 0 && distance < 200) { // Show if < 100 cm
+    float objX = cos(radians(angle)) * distance * 2;
+    float objY = -sin(radians(angle)) * distance * 2;
+    
+    // Draw red dot
+    fill(255, 0, 0);
+    noStroke();
+    ellipse(objX, objY, 10, 10);
+    
+    // Show distance text
+    fill(255); // White text
+    textSize(12);
+    text(nf(distance, 0, 1) + " cm", objX + 10, objY); 
+  }
+}
+
+void serialEvent(Serial myPort) {
+  data = myPort.readStringUntil('\n');
+  if (data != null) {
+    data = trim(data);
+    String[] values = split(data, ',');
+    if (values.length == 2) {
+      angle = float(values[0]);
+      distance = float(values[1]);
+    }
+  }
+}
